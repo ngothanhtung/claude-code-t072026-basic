@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics Dashboard — E-Commerce Reports</title>
+  <meta name="description" content="E-commerce analytics dashboard: sales revenue, business results, and marketing metrics with interactive charts and data tables." />
+
+  <!-- Google Fonts (Poppins + Inter — per CLAUDE.md §3.2) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS (per CLAUDE.md §5) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons (per CLAUDE.md §4.1) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: { bg: '#090A14', card: '#0E1020', border: '#1C1F36', muted: '#2A2D4A', text: '#A0A8CC' },
+            primary: { DEFAULT: '#DF6B33', hover: '#E87D47' }
+          },
+          fontFamily: {
+            poppins: ['Poppins', 'sans-serif'],
+            inter: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: #090A14;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      color: #E8EAF6;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient blobs (per CLAUDE.md §3.1) */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-orange {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(223, 107, 51, 0.13) 0%, transparent 70%);
+      top: -200px; right: -200px;
+      animation: pulseGlow 4.5s ease-in-out infinite;
+    }
+    .blob-blue {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.09) 0%, transparent 70%);
+      bottom: -150px; left: -150px;
+      animation: pulseGlow 6s ease-in-out infinite 1.5s;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: .45; }
+      50% { opacity: 1; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Layout */
+    .page-content { position: relative; z-index: 1; }
+
+    /* Cards */
+    .card {
+      background: linear-gradient(135deg, rgba(14, 16, 32, 0.96) 0%, rgba(9, 10, 20, 0.98) 100%);
+      border: 1px solid #1C1F36;
+      border-radius: 20px;
+      box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.025);
+      backdrop-filter: blur(20px);
+    }
+
+    /* KPI cards */
+    .kpi-card {
+      background: linear-gradient(135deg, rgba(14, 16, 32, 0.96) 0%, rgba(9, 10, 20, 0.98) 100%);
+      border: 1px solid #1C1F36;
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .25s, transform .2s;
+      animation: fadeUp 0.5s ease both;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #DF6B33, transparent);
+      opacity: 0;
+      transition: opacity .25s;
+    }
+    .kpi-card:hover { border-color: #2A2D4A; transform: translateY(-2px); }
+    .kpi-card:hover::before { opacity: 1; }
+
+    /* KPI icon ring */
+    .kpi-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Chart container */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #4A4F72;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #1C1F36;
+      white-space: nowrap;
+    }
+    .data-table td {
+      font-size: 13.5px;
+      color: #A0A8CC;
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(28, 31, 54, 0.6);
+      vertical-align: middle;
+    }
+    .data-table tbody tr:hover td { background: rgba(255,255,255,0.025); color: #E8EAF6; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table td.highlight { color: #E8EAF6; font-weight: 500; }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11.5px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge-green { background: rgba(34,197,94,0.12); color: #22c55e; }
+    .badge-red   { background: rgba(239,68,68,0.12); color: #ef4444; }
+    .badge-blue  { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .badge-amber { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .badge-orange{ background: rgba(223,107,51,0.15); color: #DF6B33; }
+
+    /* Progress bar */
+    .prog-track {
+      height: 5px; border-radius: 99px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, #DF6B33, #E87D47);
+      transition: width .6s ease;
+    }
+
+    /* Section label */
+    .section-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: #4A4F72;
+    }
+
+    /* Trend indicator */
+    .trend-up   { color: #22c55e; }
+    .trend-down { color: #ef4444; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2A2D4A; border-radius: 3px; }
+
+    /* Stagger delays */
+    .d1 { animation-delay: .05s; animation-fill-mode: both; }
+    .d2 { animation-delay: .10s; animation-fill-mode: both; }
+    .d3 { animation-delay: .15s; animation-fill-mode: both; }
+    .d4 { animation-delay: .20s; animation-fill-mode: both; }
+    .d5 { animation-delay: .25s; animation-fill-mode: both; }
+    .anim { animation: fadeUp .5s ease both; }
+
+    /* Nav */
+    .nav-bar {
+      background: rgba(9,10,20,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid #1C1F36;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .nav-link {
+      color: #A0A8CC; font-size: 14px; font-weight: 500;
+      padding: 6px 14px; border-radius: 8px;
+      text-decoration: none;
+      transition: background .2s, color .2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.05); color: #E8EAF6; }
+    .nav-link.active { background: rgba(223,107,51,0.12); color: #DF6B33; }
+
+    /* Tab buttons */
+    .tab-btn {
+      font-size: 13px; font-weight: 500;
+      padding: 6px 16px; border-radius: 8px;
+      border: none; cursor: pointer;
+      color: #4A4F72;
+      background: transparent;
+      transition: background .2s, color .2s;
+    }
+    .tab-btn.active { background: rgba(223,107,51,0.15); color: #DF6B33; }
+    .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); color: #A0A8CC; }
+
+    /* Main section tabs */
+    .main-tab-bar {
+      display: flex; gap: 4px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #1C1F36;
+      border-radius: 14px;
+      padding: 5px;
+      flex-wrap: wrap;
+    }
+    .main-tab {
+      font-family: 'Inter', sans-serif;
+      font-size: 13.5px; font-weight: 500;
+      padding: 8px 18px; border-radius: 10px;
+      border: none; cursor: pointer;
+      color: #4A4F72; background: transparent;
+      display: flex; align-items: center; gap: 7px;
+      transition: background .2s, color .2s, box-shadow .2s;
+      white-space: nowrap;
+    }
+    .main-tab.active {
+      background: linear-gradient(135deg, rgba(223,107,51,0.2), rgba(223,107,51,0.1));
+      color: #DF6B33;
+      box-shadow: 0 0 0 1px rgba(223,107,51,0.25);
+    }
+    .main-tab:hover:not(.active) { background: rgba(255,255,255,0.05); color: #A0A8CC; }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeUp .4s ease both; }
+
+    /* Staff rank badge */
+    .rank-badge {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .rank-1 { background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #0E1020; }
+    .rank-2 { background: linear-gradient(135deg,#94a3b8,#cbd5e1); color: #0E1020; }
+    .rank-3 { background: linear-gradient(135deg,#d97706,#f59e0b); color: #0E1020; }
+    .rank-other { background: rgba(255,255,255,0.07); color: #A0A8CC; }
+
+    /* Avatar placeholder */
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; flex-shrink: 0;
+      color: #E8EAF6;
+    }
+
+    /* Overflow-x for table on mobile */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Ambient blobs -->
+  <div class="blob blob-orange"></div>
+  <div class="blob blob-blue"></div>
+
+  <!-- ── Navigation bar ───────────────────────────────── -->
+  <nav class="nav-bar px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between h-14">
+      <!-- Logo -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(223,107,51,0.15); border:1px solid rgba(223,107,51,0.3);">
+          <i data-lucide="zap" class="w-4 h-4" style="color:#DF6B33;"></i>
+        </div>
+        <span class="font-poppins font-bold text-white text-sm tracking-tight">ShopMetrics</span>
+      </div>
+
+      <!-- Nav links -->
+      <div class="hidden sm:flex items-center gap-1">
+        <a href="#" class="nav-link">
+          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Overview
+        </a>
+        <a href="#" class="nav-link active">
+          <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> Reports
+        </a>
+        <a href="#" class="nav-link">
+          <i data-lucide="package" class="w-3.5 h-3.5"></i> Products
+        </a>
+        <a href="#" class="nav-link">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i> Customers
+        </a>
+      </div>
+
+      <!-- Auth links -->
+      <div class="flex items-center gap-2">
+        <a href="login.html" class="nav-link text-xs">
+          <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Sign In</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main content ──────────────────────────────────── -->
+  <main class="page-content max-w-7xl mx-auto px-4 sm:px-6 py-8" role="main">
+
+    <!-- Page header -->
+    <div class="mb-8 anim">
+      <span class="section-label">E-Commerce · Q2 2025</span>
+      <h1 class="font-poppins font-bold text-2xl sm:text-3xl text-white mt-1 mb-1">Sales & Marketing Analytics</h1>
+      <p style="color:#A0A8CC;" class="text-sm">Revenue, business performance, and marketing metrics — mock data demo.</p>
+    </div>
+
+    <!-- ── KPI Cards ──────────────────────────────────── -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+      <!-- Total Revenue -->
+      <div class="kpi-card d1">
+        <div class="flex items-start justify-between mb-3">
+          <div class="kpi-icon" style="background:rgba(223,107,51,0.12); border:1px solid rgba(223,107,51,0.2);">
+            <i data-lucide="dollar-sign" class="w-5 h-5" style="color:#DF6B33;"></i>
+          </div>
+          <span class="badge badge-green text-xs">
+            <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>+18.4%
+          </span>
+        </div>
+        <div class="font-poppins font-bold text-2xl text-white mb-0.5">$4.82M</div>
+        <div class="text-xs" style="color:#4A4F72;">Total Revenue · Q2 2025</div>
+        <div class="prog-track mt-3"><div class="prog-fill" style="width:78%;"></div></div>
+      </div>
+
+      <!-- Total Orders -->
+      <div class="kpi-card d2">
+        <div class="flex items-start justify-between mb-3">
+          <div class="kpi-icon" style="background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.2);">
+            <i data-lucide="shopping-cart" class="w-5 h-5" style="color:#818cf8;"></i>
+          </div>
+          <span class="badge badge-green text-xs">
+            <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>+12.1%
+          </span>
+        </div>
+        <div class="font-poppins font-bold text-2xl text-white mb-0.5">38,420</div>
+        <div class="text-xs" style="color:#4A4F72;">Total Orders · Q2 2025</div>
+        <div class="prog-track mt-3"><div class="prog-fill" style="width:62%; background:linear-gradient(90deg,#6366f1,#818cf8);"></div></div>
+      </div>
+
+      <!-- Conversion Rate -->
+      <div class="kpi-card d3">
+        <div class="flex items-start justify-between mb-3">
+          <div class="kpi-icon" style="background:rgba(34,197,94,0.10); border:1px solid rgba(34,197,94,0.2);">
+            <i data-lucide="percent" class="w-5 h-5" style="color:#22c55e;"></i>
+          </div>
+          <span class="badge badge-red text-xs">
+            <i data-lucide="trending-down" class="w-3 h-3 mr-1"></i>-0.8%
+          </span>
+        </div>
+        <div class="font-poppins font-bold text-2xl text-white mb-0.5">3.74%</div>
+        <div class="text-xs" style="color:#4A4F72;">Conversion Rate</div>
+        <div class="prog-track mt-3"><div class="prog-fill" style="width:37%; background:linear-gradient(90deg,#22c55e,#4ade80);"></div></div>
+      </div>
+
+      <!-- Avg Order Value -->
+      <div class="kpi-card d4">
+        <div class="flex items-start justify-between mb-3">
+          <div class="kpi-icon" style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.2);">
+            <i data-lucide="receipt" class="w-5 h-5" style="color:#f59e0b;"></i>
+          </div>
+          <span class="badge badge-green text-xs">
+            <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i>+5.6%
+          </span>
+        </div>
+        <div class="font-poppins font-bold text-2xl text-white mb-0.5">$125.50</div>
+        <div class="text-xs" style="color:#4A4F72;">Avg. Order Value</div>
+        <div class="prog-track mt-3"><div class="prog-fill" style="width:55%; background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div>
+      </div>
+
+    </div>
+
+    <!-- ── Row 1: Revenue Trend + Category ──────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+      <!-- Revenue Trend (line) — spans 2 cols -->
+      <div class="card p-6 lg:col-span-2 anim d2">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <span class="section-label">Sales Revenue</span>
+            <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Monthly Revenue Trend</h2>
+          </div>
+          <div class="flex gap-1 bg-white/5 rounded-lg p-1">
+            <button class="tab-btn active" onclick="switchRevTab(this,'monthly')" id="tabMonthly">Monthly</button>
+            <button class="tab-btn" onclick="switchRevTab(this,'weekly')" id="tabWeekly">Weekly</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:260px;">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Revenue by Category (doughnut) -->
+      <div class="card p-6 anim d3">
+        <span class="section-label">Category Breakdown</span>
+        <h2 class="font-poppins font-bold text-lg text-white mt-0.5 mb-5">Revenue Share</h2>
+        <div class="chart-wrap" style="height:200px;">
+          <canvas id="categoryChart"></canvas>
+        </div>
+        <!-- Legend -->
+        <ul class="mt-4 space-y-2" id="catLegend"></ul>
+      </div>
+
+    </div>
+
+    <!-- ── Row 2: Orders by Status + Marketing Funnel ─── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Orders by status (bar) -->
+      <div class="card p-6 anim d3">
+        <span class="section-label">Business Results</span>
+        <h2 class="font-poppins font-bold text-lg text-white mt-0.5 mb-5">Monthly Orders by Status</h2>
+        <div class="chart-wrap" style="height:240px;">
+          <canvas id="ordersChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Marketing Funnel (horizontal bar) -->
+      <div class="card p-6 anim d4">
+        <span class="section-label">Marketing</span>
+        <h2 class="font-poppins font-bold text-lg text-white mt-0.5 mb-5">Acquisition Funnel</h2>
+        <div class="chart-wrap" style="height:240px;">
+          <canvas id="funnelChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Row 3: Marketing Channel Performance ──────── -->
+    <div class="card p-6 mb-6 anim d4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+          <span class="section-label">Marketing Analytics</span>
+          <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Channel Performance · Q2 2025</h2>
+        </div>
+        <span class="badge badge-orange">
+          <i data-lucide="activity" class="w-3 h-3 mr-1"></i> Live Demo Data
+        </span>
+      </div>
+      <div class="chart-wrap" style="height:230px;">
+        <canvas id="marketingChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Row 4: Tables ─────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Top Products Table -->
+      <div class="card p-6 anim d4">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <span class="section-label">Business Results</span>
+            <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Top Products</h2>
+          </div>
+          <i data-lucide="package" class="w-5 h-5" style="color:#4A4F72;"></i>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" aria-label="Top products by revenue">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Revenue</th>
+                <th>Units</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="highlight">01</td>
+                <td class="highlight">iPhone 16 Pro Max</td>
+                <td>Electronics</td>
+                <td class="highlight">$482,300</td>
+                <td>1,240</td>
+                <td><span class="badge badge-green">Trending</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">02</td>
+                <td class="highlight">Samsung 4K OLED TV</td>
+                <td>Electronics</td>
+                <td class="highlight">$318,500</td>
+                <td>890</td>
+                <td><span class="badge badge-green">Trending</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">03</td>
+                <td class="highlight">Nike Air Max 2025</td>
+                <td>Fashion</td>
+                <td class="highlight">$214,700</td>
+                <td>3,560</td>
+                <td><span class="badge badge-blue">Stable</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">04</td>
+                <td class="highlight">MacBook Pro M4</td>
+                <td>Electronics</td>
+                <td class="highlight">$196,200</td>
+                <td>410</td>
+                <td><span class="badge badge-blue">Stable</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">05</td>
+                <td class="highlight">Dyson V15 Vacuum</td>
+                <td>Home & Garden</td>
+                <td class="highlight">$157,800</td>
+                <td>1,820</td>
+                <td><span class="badge badge-amber">Seasonal</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">06</td>
+                <td class="highlight">Levi's 501 Jeans</td>
+                <td>Fashion</td>
+                <td class="highlight">$98,400</td>
+                <td>4,200</td>
+                <td><span class="badge badge-amber">Seasonal</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">07</td>
+                <td class="highlight">Instant Pot Duo</td>
+                <td>Kitchen</td>
+                <td class="highlight">$76,100</td>
+                <td>2,100</td>
+                <td><span class="badge badge-red">Declining</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Marketing Channel Table -->
+      <div class="card p-6 anim d5">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <span class="section-label">Marketing</span>
+            <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Traffic Sources</h2>
+          </div>
+          <i data-lucide="antenna" class="w-5 h-5" style="color:#4A4F72;"></i>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" aria-label="Traffic sources and marketing metrics">
+            <thead>
+              <tr>
+                <th>Channel</th>
+                <th>Sessions</th>
+                <th>Conv. %</th>
+                <th>Revenue</th>
+                <th>ROAS</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="highlight">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="search" class="w-3.5 h-3.5" style="color:#DF6B33;flex-shrink:0;"></i> Organic Search
+                  </div>
+                </td>
+                <td>312,400</td>
+                <td class="highlight">4.82%</td>
+                <td>$1,340,200</td>
+                <td><span class="badge badge-green">∞</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 24.1%</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="mouse-pointer" class="w-3.5 h-3.5" style="color:#818cf8;flex-shrink:0;"></i> Paid Search
+                  </div>
+                </td>
+                <td>187,500</td>
+                <td class="highlight">5.10%</td>
+                <td>$1,020,400</td>
+                <td><span class="badge badge-blue">4.8×</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 18.3%</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="instagram" class="w-3.5 h-3.5" style="color:#f59e0b;flex-shrink:0;"></i> Social Media
+                  </div>
+                </td>
+                <td>246,800</td>
+                <td class="highlight">2.94%</td>
+                <td>$742,600</td>
+                <td><span class="badge badge-amber">3.2×</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 31.7%</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="mail" class="w-3.5 h-3.5" style="color:#22c55e;flex-shrink:0;"></i> Email
+                  </div>
+                </td>
+                <td>98,200</td>
+                <td class="highlight">6.73%</td>
+                <td>$618,400</td>
+                <td><span class="badge badge-green">6.1×</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 9.4%</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="link" class="w-3.5 h-3.5" style="color:#A0A8CC;flex-shrink:0;"></i> Affiliates
+                  </div>
+                </td>
+                <td>74,100</td>
+                <td class="highlight">3.55%</td>
+                <td>$382,700</td>
+                <td><span class="badge badge-blue">2.9×</span></td>
+                <td><span class="trend-down text-xs font-medium">▼ 4.2%</span></td>
+              </tr>
+              <tr>
+                <td class="highlight">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="globe" class="w-3.5 h-3.5" style="color:#4A4F72;flex-shrink:0;"></i> Direct
+                  </div>
+                </td>
+                <td>58,600</td>
+                <td class="highlight">3.22%</td>
+                <td>$271,800</td>
+                <td><span class="badge badge-green">∞</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 6.8%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Summary row -->
+        <div class="mt-4 pt-4" style="border-top:1px solid #1C1F36;">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div class="font-poppins font-bold text-white text-lg">977.6K</div>
+              <div class="text-xs" style="color:#4A4F72;">Total Sessions</div>
+            </div>
+            <div>
+              <div class="font-poppins font-bold text-white text-lg">4.06%</div>
+              <div class="text-xs" style="color:#4A4F72;">Avg. Conversion</div>
+            </div>
+            <div>
+              <div class="font-poppins font-bold text-white text-lg">$4.38M</div>
+              <div class="text-xs" style="color:#4A4F72;">Total Revenue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div><!-- /panel-overview -->
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TAB 2: Top 10 Sales Staff                        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="panel-staff" class="tab-panel" role="tabpanel" aria-labelledby="mainTab-staff">
+
+      <!-- Staff KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(223,107,51,0.12);border:1px solid rgba(223,107,51,0.2);">
+            <i data-lucide="users" class="w-5 h-5" style="color:#DF6B33;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">48</div>
+          <div class="text-xs" style="color:#4A4F72;">Active Sales Reps</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);">
+            <i data-lucide="target" class="w-5 h-5" style="color:#818cf8;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">87.4%</div>
+          <div class="text-xs" style="color:#4A4F72;">Quota Attainment</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.2);">
+            <i data-lucide="trending-up" class="w-5 h-5" style="color:#22c55e;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">$158K</div>
+          <div class="text-xs" style="color:#4A4F72;">Avg. Revenue / Rep</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2);">
+            <i data-lucide="star" class="w-5 h-5" style="color:#f59e0b;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">$684K</div>
+          <div class="text-xs" style="color:#4A4F72;">Top Rep Revenue</div>
+        </div>
+      </div>
+
+      <!-- Period toggle + chart + table row -->
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+
+        <!-- Bar chart: top 10 revenue -->
+        <div class="card p-6 lg:col-span-3">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+              <span class="section-label">Sales Staff</span>
+              <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Revenue by Rep</h2>
+            </div>
+            <div class="flex gap-1 bg-white/5 rounded-lg p-1">
+              <button class="tab-btn active" onclick="switchStaffTab(this,'monthly')" id="staffTabM">This Month</button>
+              <button class="tab-btn" onclick="switchStaffTab(this,'quarterly')" id="staffTabQ">This Quarter</button>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:300px;">
+            <canvas id="staffRevenueChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Quota attainment chart -->
+        <div class="card p-6 lg:col-span-2">
+          <span class="section-label">Quota Attainment</span>
+          <h2 class="font-poppins font-bold text-lg text-white mt-0.5 mb-5">% of Target Hit</h2>
+          <div class="chart-wrap" style="height:300px;">
+            <canvas id="quotaChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Ranking Table -->
+      <div class="card p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <span class="section-label">Leaderboard</span>
+            <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Top 10 Sales Representatives — Q2 2025</h2>
+          </div>
+          <span class="badge badge-orange">
+            <i data-lucide="trophy" class="w-3 h-3 mr-1"></i> Quarterly Ranking
+          </span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" aria-label="Top 10 sales staff ranking">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Region</th>
+                <th>Revenue (Q2)</th>
+                <th>Orders</th>
+                <th>Quota %</th>
+                <th>Avg Deal</th>
+                <th>Growth</th>
+                <th>Award</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /panel-staff -->
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TAB 3: Revenue by Region                         -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="panel-region" class="tab-panel" role="tabpanel" aria-labelledby="mainTab-region">
+
+      <!-- Region KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(223,107,51,0.12);border:1px solid rgba(223,107,51,0.2);">
+            <i data-lucide="map-pin" class="w-5 h-5" style="color:#DF6B33;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">6</div>
+          <div class="text-xs" style="color:#4A4F72;">Active Regions</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.2);">
+            <i data-lucide="crown" class="w-5 h-5" style="color:#22c55e;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">Ho Chi Minh City</div>
+          <div class="text-xs" style="color:#4A4F72;">Top Revenue Region</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon mb-3" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);">
+            <i data-lucide="trending-up" class="w-5 h-5" style="color:#818cf8;"></i>
+          </div>
+          <div class="font-poppins font-bold text-2xl text-white mb-0.5">Da Nang +41%</div>
+          <div class="text-xs" style="color:#4A4F72;">Fastest Growing Region</div>
+        </div>
+      </div>
+
+      <!-- Main regional bar chart -->
+      <div class="card p-6 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <span class="section-label">Geographic Performance</span>
+            <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Monthly Revenue by Region ($K)</h2>
+          </div>
+          <div class="flex gap-1 bg-white/5 rounded-lg p-1">
+            <button class="tab-btn active" onclick="switchRegionView(this,'grouped')" id="regionTabG">Grouped</button>
+            <button class="tab-btn" onclick="switchRegionView(this,'stacked')" id="regionTabS">Stacked</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="regionMonthlyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Row: Category by region + region share -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- Revenue by region + category (horizontal bar) -->
+        <div class="card p-6">
+          <span class="section-label">Regional Breakdown</span>
+          <h2 class="font-poppins font-bold text-lg text-white mt-0.5 mb-5">Category Mix by Region</h2>
+          <div class="chart-wrap" style="height:280px;">
+            <canvas id="regionCategoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Region share doughnut -->
+        <div class="card p-6">
+          <span class="section-label">Revenue Share</span>
+          <h2 class="font-poppins font-bold text-lg text-white mt-0.5 mb-5">Total Revenue by Region</h2>
+          <div class="chart-wrap" style="height:200px;">
+            <canvas id="regionShareChart"></canvas>
+          </div>
+          <ul class="mt-4 space-y-2" id="regionLegend"></ul>
+        </div>
+
+      </div>
+
+      <!-- Region summary table -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <span class="section-label">Regional Summary</span>
+            <h2 class="font-poppins font-bold text-lg text-white mt-0.5">Q2 2025 Performance by Region</h2>
+          </div>
+          <i data-lucide="map" class="w-5 h-5" style="color:#4A4F72;"></i>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" aria-label="Revenue by region summary table">
+            <thead>
+              <tr>
+                <th>Region</th>
+                <th>Revenue (Q2)</th>
+                <th>Orders</th>
+                <th>Avg Order</th>
+                <th>Share %</th>
+                <th>vs Q1</th>
+                <th>Top Category</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="highlight"><div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:#DF6B33;display:inline-block;"></span>Ho Chi Minh City</div></td>
+                <td class="highlight">$1,624,000</td>
+                <td>12,840</td>
+                <td>$126.50</td>
+                <td><span class="badge badge-orange">33.7%</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 22.4%</span></td>
+                <td>Electronics</td>
+              </tr>
+              <tr>
+                <td class="highlight"><div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:#6366f1;display:inline-block;"></span>Ha Noi</div></td>
+                <td class="highlight">$1,156,000</td>
+                <td>9,420</td>
+                <td>$122.70</td>
+                <td><span class="badge badge-blue">24.0%</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 16.8%</span></td>
+                <td>Fashion</td>
+              </tr>
+              <tr>
+                <td class="highlight"><div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Da Nang</div></td>
+                <td class="highlight">$648,000</td>
+                <td>5,180</td>
+                <td>$125.10</td>
+                <td><span class="badge badge-green">13.4%</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 41.2%</span></td>
+                <td>Sports</td>
+              </tr>
+              <tr>
+                <td class="highlight"><div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Can Tho</div></td>
+                <td class="highlight">$482,000</td>
+                <td>3,960</td>
+                <td>$121.70</td>
+                <td><span class="badge badge-amber">10.0%</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 11.3%</span></td>
+                <td>Home &amp; Garden</td>
+              </tr>
+              <tr>
+                <td class="highlight"><div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:#ec4899;display:inline-block;"></span>Hai Phong</div></td>
+                <td class="highlight">$398,000</td>
+                <td>3,240</td>
+                <td>$122.80</td>
+                <td><span class="badge" style="background:rgba(236,72,153,0.12);color:#ec4899;">8.2%</span></td>
+                <td><span class="trend-up text-xs font-medium">▲ 8.6%</span></td>
+                <td>Kitchen</td>
+              </tr>
+              <tr>
+                <td class="highlight"><div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:#14b8a6;display:inline-block;"></span>Other</div></td>
+                <td class="highlight">$514,000</td>
+                <td>3,780</td>
+                <td>$135.90</td>
+                <td><span class="badge" style="background:rgba(20,184,166,0.12);color:#14b8a6;">10.7%</span></td>
+                <td><span class="trend-down text-xs font-medium">▼ 2.1%</span></td>
+                <td>Electronics</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /panel-region -->
+
+    <!-- ── Footer ─────────────────────────────────────── -->
+    <footer class="text-center py-6 text-xs" style="color:#4A4F72; border-top:1px solid #1C1F36;">
+      ShopMetrics Analytics · Mock data for demonstration purposes only · Q2 2025 report
+    </footer>
+
+  </main>
+
+  <script>
+    // ── Init Lucide ──────────────────────────────────────
+    lucide.createIcons();
+
+    // ── Chart.js global defaults ─────────────────────────
+    Chart.defaults.color = '#4A4F72';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+
+    const gridColor   = 'rgba(28,31,54,0.8)';
+    const borderColor = 'rgba(28,31,54,0)';
+
+    // ── Mock Data ────────────────────────────────────────
+    const months = ['Jan','Feb','Mar','Apr','May','Jun'];
+    const weeks  = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+
+    const revenueMonthly = [620, 754, 690, 812, 878, 940];
+    const revenueWeekly  = [148,162,175,190,180,200,215,222,210,230,245,258];
+    const prevMonthly    = [520, 660, 610, 740, 780, 820];
+
+    // ── 1. Revenue Trend Chart ───────────────────────────
+    const revCtx = document.getElementById('revenueChart').getContext('2d');
+    const gradRev = revCtx.createLinearGradient(0, 0, 0, 260);
+    gradRev.addColorStop(0, 'rgba(223,107,51,0.25)');
+    gradRev.addColorStop(1, 'rgba(223,107,51,0)');
+
+    const gradPrev = revCtx.createLinearGradient(0, 0, 0, 260);
+    gradPrev.addColorStop(0, 'rgba(99,102,241,0.15)');
+    gradPrev.addColorStop(1, 'rgba(99,102,241,0)');
+
+    const revenueChart = new Chart(revCtx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: 'Q2 2025 ($K)',
+            data: revenueMonthly,
+            borderColor: '#DF6B33',
+            backgroundColor: gradRev,
+            borderWidth: 2.5,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#DF6B33',
+            pointBorderColor: '#090A14',
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.42,
+          },
+          {
+            label: 'Q2 2024 ($K)',
+            data: prevMonthly,
+            borderColor: '#6366f1',
+            backgroundColor: gradPrev,
+            borderWidth: 1.8,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#6366f1',
+            pointBorderColor: '#090A14',
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.42,
+            borderDash: [4, 3],
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: { boxWidth: 10, boxHeight: 10, borderRadius: 3, padding: 16, color: '#A0A8CC', usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(14,16,32,0.97)',
+            borderColor: '#1C1F36',
+            borderWidth: 1,
+            padding: 12,
+            titleColor: '#E8EAF6',
+            bodyColor: '#A0A8CC',
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y}K`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: '#4A4F72' } },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: '#4A4F72', callback: v => `$${v}K` },
+            beginAtZero: false,
+          }
+        }
+      }
+    });
+
+    // Tab switching
+    const revDataSets = {
+      monthly: { labels: months, current: revenueMonthly, prev: prevMonthly },
+      weekly:  { labels: weeks,  current: revenueWeekly,  prev: revenueWeekly.map(v => Math.round(v * 0.88)) }
+    };
+    function switchRevTab(btn, key) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const d = revDataSets[key];
+      revenueChart.data.labels = d.labels;
+      revenueChart.data.datasets[0].data = d.current;
+      revenueChart.data.datasets[1].data = d.prev;
+      revenueChart.update('active');
+    }
+
+    // ── 2. Category Doughnut ─────────────────────────────
+    const catData = [
+      { label: 'Electronics',   value: 38, color: '#DF6B33' },
+      { label: 'Fashion',        value: 24, color: '#6366f1' },
+      { label: 'Home & Garden',  value: 16, color: '#22c55e' },
+      { label: 'Kitchen',        value: 12, color: '#f59e0b' },
+      { label: 'Sports',         value: 10, color: '#ec4899' },
+    ];
+
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'doughnut',
+      data: {
+        labels: catData.map(d => d.label),
+        datasets: [{
+          data: catData.map(d => d.value),
+          backgroundColor: catData.map(d => d.color),
+          borderColor: '#090A14',
+          borderWidth: 3,
+          hoverBorderWidth: 3,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(14,16,32,0.97)',
+            borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+            titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+            callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` }
+          }
+        }
+      }
+    });
+
+    // Render legend
+    const leg = document.getElementById('catLegend');
+    catData.forEach(d => {
+      const li = document.createElement('li');
+      li.className = 'flex items-center justify-between';
+      li.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span style="width:8px;height:8px;border-radius:50%;background:${d.color};display:inline-block;flex-shrink:0;"></span>
+          <span style="font-size:12.5px;color:#A0A8CC;">${d.label}</span>
+        </div>
+        <span style="font-size:12.5px;color:#E8EAF6;font-weight:500;">${d.value}%</span>
+      `;
+      leg.appendChild(li);
+    });
+
+    // ── 3. Orders by Status (grouped bar) ───────────────
+    new Chart(document.getElementById('ordersChart'), {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          { label: 'Delivered',  data: [3800,4200,3900,4800,5100,5600], backgroundColor: 'rgba(34,197,94,0.75)',  borderRadius: 5, borderSkipped: false },
+          { label: 'Processing', data: [820, 900, 860, 1050,980, 1100], backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 5, borderSkipped: false },
+          { label: 'Cancelled',  data: [310, 280, 320, 290, 260, 240],  backgroundColor: 'rgba(239,68,68,0.6)',   borderRadius: 5, borderSkipped: false },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, borderRadius: 3, padding: 14, color: '#A0A8CC', usePointStyle: true, pointStyle: 'circle' } },
+          tooltip: {
+            backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+            titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+          }
+        },
+        scales: {
+          x: { stacked: false, grid: { color: borderColor }, ticks: { color: '#4A4F72' } },
+          y: { stacked: false, grid: { color: gridColor }, ticks: { color: '#4A4F72' }, beginAtZero: true }
+        }
+      }
+    });
+
+    // ── 4. Marketing Funnel (horizontal bar) ─────────────
+    const funnelCtx = document.getElementById('funnelChart').getContext('2d');
+    const gradFunnel = funnelCtx.createLinearGradient(600, 0, 0, 0);
+    gradFunnel.addColorStop(0, '#DF6B33');
+    gradFunnel.addColorStop(1, 'rgba(223,107,51,0.4)');
+
+    new Chart(funnelCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Impressions (M)', 'Clicks (K)', 'Sessions (K)', 'Add to Cart (K)', 'Checkout (K)', 'Purchase (K)'],
+        datasets: [{
+          data: [18.4, 892, 512, 186, 68, 38.4],
+          backgroundColor: [
+            'rgba(223,107,51,0.85)', 'rgba(223,107,51,0.72)',
+            'rgba(223,107,51,0.60)', 'rgba(223,107,51,0.48)',
+            'rgba(223,107,51,0.36)', 'rgba(223,107,51,0.24)',
+          ],
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+            titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+          }
+        },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: '#4A4F72' } },
+          y: { grid: { color: borderColor }, ticks: { color: '#A0A8CC' } }
+        }
+      }
+    });
+
+    // ── 5. Marketing Channel Performance (grouped bar) ───
+    new Chart(document.getElementById('marketingChart'), {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          { label: 'Organic Search ($K)', data: [188,210,195,240,265,242], backgroundColor: 'rgba(223,107,51,0.80)', borderRadius: 5, borderSkipped: false },
+          { label: 'Paid Search ($K)',    data: [142,158,148,180,196,196], backgroundColor: 'rgba(99,102,241,0.75)',  borderRadius: 5, borderSkipped: false },
+          { label: 'Social Media ($K)',   data: [96, 118,105,136,148,140], backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 5, borderSkipped: false },
+          { label: 'Email ($K)',          data: [88, 95, 90, 112,118,115], backgroundColor: 'rgba(34,197,94,0.70)',  borderRadius: 5, borderSkipped: false },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, borderRadius: 3, padding: 14, color: '#A0A8CC', usePointStyle: true, pointStyle: 'circle' } },
+          tooltip: {
+            backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+            titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+            callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y}K` }
+          }
+        },
+        scales: {
+          x: { grid: { color: borderColor }, ticks: { color: '#4A4F72' } },
+          y: { grid: { color: gridColor }, ticks: { color: '#4A4F72', callback: v => `$${v}K` }, beginAtZero: true }
+        }
+      }
+    });
+
+    // ── Main tab switcher ────────────────────────────────
+    function switchMainTab(key) {
+      document.querySelectorAll('.main-tab').forEach(b => {
+        b.classList.toggle('active', b.id === 'mainTab-' + key);
+        b.setAttribute('aria-selected', b.id === 'mainTab-' + key);
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => {
+        p.classList.toggle('active', p.id === 'panel-' + key);
+      });
+      // Lazy-init charts when first opening a tab
+      if (key === 'staff'   && !window._staffInit)   { initStaffCharts();   window._staffInit = true; }
+      if (key === 'region'  && !window._regionInit)  { initRegionCharts();  window._regionInit = true; }
+      lucide.createIcons();
+    }
+
+    // ════════════════════════════════════════════════════
+    // STAFF TAB
+    // ════════════════════════════════════════════════════
+    const staffData = [
+      { name:'Nguyen Thi Lan',    region:'Ho Chi Minh', revM: 684, revQ: 1842, orders: 312, quota: 114, avg: 2192, growth: 28.4, award:'🏆 MVP' },
+      { name:'Tran Van Minh',     region:'Ha Noi',      revM: 612, revQ: 1680, orders: 288, quota: 108, avg: 2125, growth: 19.2, award:'⭐ Star' },
+      { name:'Le Thi Hoa',        region:'Da Nang',     revM: 578, revQ: 1548, orders: 274, quota: 103, avg: 2038, growth: 35.6, award:'🚀 Rising' },
+      { name:'Pham Quoc Bao',     region:'Ha Noi',      revM: 524, revQ: 1412, orders: 251, quota: 98,  avg: 2057, growth: 14.8, award:'' },
+      { name:'Hoang Thi Mai',     region:'Ho Chi Minh', revM: 498, revQ: 1346, orders: 238, quota: 96,  avg: 2092, growth: 11.4, award:'' },
+      { name:'Vu Duc Thanh',      region:'Can Tho',     revM: 462, revQ: 1248, orders: 220, quota: 92,  avg: 2100, growth:  9.8, award:'' },
+      { name:'Dang Thi Bich',     region:'Hai Phong',   revM: 436, revQ: 1176, orders: 214, quota: 89,  avg: 2037, growth:  7.3, award:'' },
+      { name:'Ngo Van Khanh',     region:'Ho Chi Minh', revM: 408, revQ: 1104, orders: 198, quota: 86,  avg: 2060, growth:  5.9, award:'' },
+      { name:'Bui Thi Thu',       region:'Da Nang',     revM: 382, revQ: 1032, orders: 186, quota: 84,  avg: 2054, growth: 18.2, award:'' },
+      { name:'Cao Minh Phuc',     region:'Ha Noi',      revM: 356, revQ: 960,  orders: 174, quota: 80,  avg: 2046, growth:  3.4, award:'' },
+    ];
+
+    const avatarColors = ['#DF6B33','#6366f1','#22c55e','#f59e0b','#ec4899','#14b8a6','#818cf8','#fb923c','#4ade80','#60a5fa'];
+
+    let staffChart, quotaChartObj;
+    function initStaffCharts() {
+      // Build table
+      const tbody = document.getElementById('staffTableBody');
+      staffData.forEach((s, i) => {
+        const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+        const initials  = s.name.split(' ').map(w => w[0]).slice(0,2).join('');
+        tbody.innerHTML += `
+          <tr>
+            <td><span class="rank-badge ${rankClass}">${i+1}</span></td>
+            <td class="highlight">
+              <div class="flex items-center gap-2">
+                <div class="avatar" style="background:${avatarColors[i]}22;color:${avatarColors[i]};border:1px solid ${avatarColors[i]}44;">${initials}</div>
+                <span>${s.name}</span>
+              </div>
+            </td>
+            <td>${s.region}</td>
+            <td class="highlight">$${s.revQ.toLocaleString()}K</td>
+            <td>${s.orders}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;">
+              <div class="prog-track" style="width:64px;"><div class="prog-fill" style="width:${Math.min(s.quota,120)}%;${s.quota>=100?'':'background:linear-gradient(90deg,#6366f1,#818cf8);'}"></div></div>
+              <span style="font-size:12px;color:${s.quota>=100?'#22c55e':'#A0A8CC'}">${s.quota}%</span>
+            </div></td>
+            <td>$${s.avg.toLocaleString()}</td>
+            <td><span class="${s.growth>=0?'trend-up':'trend-down'} text-xs font-medium">${s.growth>=0?'▲':'▼'} ${Math.abs(s.growth)}%</span></td>
+            <td>${s.award || '<span style="color:#4A4F72;">—</span>'}</td>
+          </tr>`;
+      });
+
+      // Bar chart: revenue per rep
+      const sCtx = document.getElementById('staffRevenueChart').getContext('2d');
+      staffChart = new Chart(sCtx, {
+        type: 'bar',
+        data: {
+          labels: staffData.map(s => s.name.split(' ').slice(-1)[0]),
+          datasets: [{
+            label: 'Revenue ($K)',
+            data: staffData.map(s => s.revM),
+            backgroundColor: staffData.map((_, i) => i < 3 ? `${avatarColors[i]}cc` : 'rgba(223,107,51,0.4)'),
+            borderRadius: 8, borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+              titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+              callbacks: {
+                title: ctx => staffData[ctx[0].dataIndex].name,
+                label: ctx => ` Revenue: $${ctx.parsed.y}K`,
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(28,31,54,0)' }, ticks: { color: '#4A4F72', font: { size: 11 } } },
+            y: { grid: { color: 'rgba(28,31,54,0.8)' }, ticks: { color: '#4A4F72', callback: v => `$${v}K` }, beginAtZero: true }
+          }
+        }
+      });
+
+      // Quota attainment horizontal bar
+      const qCtx = document.getElementById('quotaChart').getContext('2d');
+      quotaChartObj = new Chart(qCtx, {
+        type: 'bar',
+        data: {
+          labels: staffData.map(s => s.name.split(' ').slice(-1)[0]),
+          datasets: [{
+            label: 'Quota %',
+            data: staffData.map(s => s.quota),
+            backgroundColor: staffData.map(s => s.quota >= 100 ? 'rgba(34,197,94,0.75)' : 'rgba(99,102,241,0.65)'),
+            borderRadius: 6, borderSkipped: false,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+              titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+              callbacks: { label: ctx => ` Quota: ${ctx.parsed.x}%` }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(28,31,54,0.8)' }, ticks: { color: '#4A4F72', callback: v => `${v}%` }, min: 60, max: 125 },
+            y: { grid: { color: 'rgba(28,31,54,0)' }, ticks: { color: '#A0A8CC', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function switchStaffTab(btn, period) {
+      document.querySelectorAll('#panel-staff .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const key = period === 'monthly' ? 'revM' : 'revQ';
+      staffChart.data.datasets[0].data = staffData.map(s => s[key]);
+      staffChart.data.datasets[0].label = period === 'monthly' ? 'This Month ($K)' : 'This Quarter ($K)';
+      staffChart.update('active');
+    }
+
+    // ════════════════════════════════════════════════════
+    // REGION TAB
+    // ════════════════════════════════════════════════════
+    const regions      = ['Ho Chi Minh','Ha Noi','Da Nang','Can Tho','Hai Phong','Other'];
+    const regionColors = ['#DF6B33','#6366f1','#22c55e','#f59e0b','#ec4899','#14b8a6'];
+    const regionMonData = {
+      'Ho Chi Minh': [228,260,242,292,312,290],
+      'Ha Noi':      [168,192,178,210,226,182],
+      'Da Nang':     [ 82, 98, 94,118,136,120],
+      'Can Tho':     [ 62, 74, 68, 86, 96, 96],
+      'Hai Phong':   [ 52, 62, 58, 72, 82, 72],
+      'Other':       [ 78, 88, 80, 94, 86, 88],
+    };
+    const regionShareData = [33.7, 24.0, 13.4, 10.0, 8.2, 10.7];
+    const catByRegion = {
+      labels: regions,
+      electronics: [42, 34, 28, 22, 30, 44],
+      fashion:     [22, 30, 18, 24, 20, 20],
+      home:        [16, 14, 18, 30, 22, 14],
+      sports:      [12, 12, 24, 10, 16, 12],
+      kitchen:     [ 8, 10, 12, 14, 12, 10],
+    };
+
+    let regionMonChart;
+    function initRegionCharts() {
+      // Monthly regional bar chart
+      const rmCtx = document.getElementById('regionMonthlyChart').getContext('2d');
+      regionMonChart = new Chart(rmCtx, {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: regions.map((r, i) => ({
+            label: r,
+            data: regionMonData[r],
+            backgroundColor: regionColors[i] + 'cc',
+            borderRadius: 5, borderSkipped: false,
+          }))
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, borderRadius: 3, padding: 14, color: '#A0A8CC', usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+              titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+              callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y}K` }
+            }
+          },
+          scales: {
+            x: { stacked: false, grid: { color: 'rgba(28,31,54,0)' }, ticks: { color: '#4A4F72' } },
+            y: { stacked: false, grid: { color: 'rgba(28,31,54,0.8)' }, ticks: { color: '#4A4F72', callback: v => `$${v}K` }, beginAtZero: true }
+          }
+        }
+      });
+
+      // Grouped toggle stacked / grouped
+      window.switchRegionView = function(btn, mode) {
+        document.querySelectorAll('#panel-region .tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const stacked = mode === 'stacked';
+        regionMonChart.options.scales.x.stacked = stacked;
+        regionMonChart.options.scales.y.stacked = stacked;
+        regionMonChart.update();
+      };
+
+      // Category mix horizontal stacked bar
+      new Chart(document.getElementById('regionCategoryChart'), {
+        type: 'bar',
+        data: {
+          labels: regions,
+          datasets: [
+            { label: 'Electronics', data: catByRegion.electronics, backgroundColor: 'rgba(223,107,51,0.80)', borderRadius: 4, borderSkipped: false },
+            { label: 'Fashion',     data: catByRegion.fashion,     backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 4, borderSkipped: false },
+            { label: 'Home',        data: catByRegion.home,        backgroundColor: 'rgba(34,197,94,0.70)',  borderRadius: 4, borderSkipped: false },
+            { label: 'Sports',      data: catByRegion.sports,      backgroundColor: 'rgba(245,158,11,0.70)', borderRadius: 4, borderSkipped: false },
+            { label: 'Kitchen',     data: catByRegion.kitchen,     backgroundColor: 'rgba(236,72,153,0.65)', borderRadius: 4, borderSkipped: false },
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, borderRadius: 3, padding: 12, color: '#A0A8CC', usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+              titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+              callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x}%` }
+            }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: 'rgba(28,31,54,0.8)' }, ticks: { color: '#4A4F72', callback: v => `${v}%` } },
+            y: { stacked: true, grid: { color: 'rgba(28,31,54,0)' },   ticks: { color: '#A0A8CC' } }
+          }
+        }
+      });
+
+      // Region share doughnut
+      new Chart(document.getElementById('regionShareChart'), {
+        type: 'doughnut',
+        data: {
+          labels: regions,
+          datasets: [{
+            data: regionShareData,
+            backgroundColor: regionColors,
+            borderColor: '#090A14',
+            borderWidth: 3, hoverOffset: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(14,16,32,0.97)', borderColor: '#1C1F36', borderWidth: 1, padding: 10,
+              titleColor: '#E8EAF6', bodyColor: '#A0A8CC',
+              callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` }
+            }
+          }
+        }
+      });
+
+      // Region legend
+      const rl = document.getElementById('regionLegend');
+      regions.forEach((r, i) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between';
+        li.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span style="width:8px;height:8px;border-radius:50%;background:${regionColors[i]};display:inline-block;flex-shrink:0;"></span>
+            <span style="font-size:12.5px;color:#A0A8CC;">${r}</span>
+          </div>
+          <span style="font-size:12.5px;color:#E8EAF6;font-weight:500;">${regionShareData[i]}%</span>`;
+        rl.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
