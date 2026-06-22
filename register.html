@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — Your App</title>
+  <meta name="description"
+    content="Create a free account to get started. Fill in your details and join thousands of users today." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: {
+              bg: '#090A14',
+              card: '#0E1020',
+              border: '#1C1F36',
+              muted: '#2A2D4A',
+              text: '#A0A8CC',
+            },
+            primary: {
+              DEFAULT: '#DF6B33',
+              hover: '#E87D47',
+              glow: 'rgba(223,107,51,0.25)',
+            }
+          },
+          fontFamily: {
+            poppins: ['Poppins', 'sans-serif'],
+            inter: ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: #090A14;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .blob-orange {
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(223, 107, 51, 0.16) 0%, transparent 70%);
+      top: -160px;
+      right: -160px;
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+
+    .blob-blue {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.10) 0%, transparent 70%);
+      bottom: -120px;
+      left: -120px;
+      animation: pulseGlow 5s ease-in-out infinite 1.2s;
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        opacity: .5;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner {
+      animation: spin .8s linear infinite;
+    }
+
+    /* Card */
+    .reg-card {
+      background: linear-gradient(135deg, rgba(14, 16, 32, 0.95) 0%, rgba(9, 10, 20, 0.98) 100%);
+      border: 1px solid #1C1F36;
+      border-radius: 24px;
+      box-shadow: 0 8px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(24px);
+      animation: fadeUp 0.5s ease both;
+    }
+
+    /* Logo ring */
+    .logo-ring {
+      background: linear-gradient(135deg, rgba(223, 107, 51, 0.2), rgba(223, 107, 51, 0.05));
+      border: 1px solid rgba(223, 107, 51, 0.3);
+      box-shadow: 0 0 32px rgba(223, 107, 51, 0.15);
+    }
+
+    /* Input */
+    .input-field {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid #1C1F36;
+      color: #E8EAF6;
+      border-radius: 12px;
+      padding: 13px 16px 13px 46px;
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      outline: none;
+    }
+
+    .input-field.no-icon {
+      padding-left: 16px;
+    }
+
+    .input-field::placeholder {
+      color: #4A4F72;
+    }
+
+    .input-field:focus {
+      border-color: #DF6B33;
+      background: rgba(223, 107, 51, 0.05);
+      box-shadow: 0 0 0 3px rgba(223, 107, 51, 0.15);
+    }
+
+    .input-field:hover:not(:focus) {
+      border-color: #2A2D4A;
+    }
+
+    .input-field.is-error {
+      border-color: #DF6B33 !important;
+      box-shadow: 0 0 0 3px rgba(223, 107, 51, 0.15) !important;
+    }
+
+    /* Select */
+    .select-field {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid #1C1F36;
+      color: #E8EAF6;
+      border-radius: 12px;
+      padding: 13px 40px 13px 46px;
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    .select-field:focus {
+      border-color: #DF6B33;
+      background: rgba(223, 107, 51, 0.05);
+      box-shadow: 0 0 0 3px rgba(223, 107, 51, 0.15);
+    }
+
+    .select-field option {
+      background: #0E1020;
+      color: #E8EAF6;
+    }
+
+    .select-field option[value=""] {
+      color: #4A4F72;
+    }
+
+    /* Chevron for select */
+    .select-chevron {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4A4F72;
+      pointer-events: none;
+    }
+
+    /* Password toggle */
+    .toggle-pw {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4A4F72;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+      transition: color .2s;
+      display: flex;
+      align-items: center;
+    }
+
+    .toggle-pw:hover {
+      color: #DF6B33;
+    }
+
+    /* Input icon */
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4A4F72;
+      pointer-events: none;
+    }
+
+    /* Primary button */
+    .btn-primary {
+      background: linear-gradient(135deg, #DF6B33 0%, #C85A26 100%);
+      border: none;
+      color: #fff;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      width: 100%;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform .18s, box-shadow .18s;
+      box-shadow: 0 4px 24px rgba(223, 107, 51, 0.35);
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(223, 107, 51, 0.45);
+    }
+
+    .btn-primary:hover::before {
+      opacity: 1;
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Custom checkbox */
+    .custom-checkbox-input {
+      display: none;
+    }
+
+    .checkbox-box {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      border: 1.5px solid #2A2D4A;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+    }
+
+    .custom-checkbox-input:checked+label .checkbox-box {
+      background: #DF6B33;
+      border-color: #DF6B33;
+    }
+
+    .custom-checkbox-input:checked+label .checkbox-box svg {
+      opacity: 1;
+    }
+
+    .checkbox-box svg {
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    .checkbox-box.is-error {
+      border-color: #DF6B33 !important;
+      box-shadow: 0 0 0 3px rgba(223, 107, 51, 0.15);
+    }
+
+    /* Divider */
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #1C1F36, transparent);
+    }
+
+    /* Link */
+    .link-primary {
+      color: #DF6B33;
+      text-decoration: none;
+      transition: color .2s;
+      font-weight: 500;
+    }
+
+    .link-primary:hover {
+      color: #E87D47;
+      text-decoration: underline;
+    }
+
+    /* Password strength bar */
+    .strength-bar {
+      height: 3px;
+      border-radius: 99px;
+      transition: width .35s ease, background .35s ease;
+      width: 0%;
+    }
+
+    /* Section label */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #4A4F72;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    /* Stagger animation delays */
+    .delay-1 {
+      animation-delay: 0.05s;
+      animation-fill-mode: both;
+    }
+
+    .delay-2 {
+      animation-delay: 0.10s;
+      animation-fill-mode: both;
+    }
+
+    .delay-3 {
+      animation-delay: 0.15s;
+      animation-fill-mode: both;
+    }
+
+    .delay-4 {
+      animation-delay: 0.20s;
+      animation-fill-mode: both;
+    }
+
+    .delay-5 {
+      animation-delay: 0.25s;
+      animation-fill-mode: both;
+    }
+
+    .delay-6 {
+      animation-delay: 0.30s;
+      animation-fill-mode: both;
+    }
+
+    .anim-fade-up {
+      animation: fadeUp 0.5s ease both;
+    }
+  </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen px-4 py-12 relative">
+
+  <!-- Ambient blobs -->
+  <div class="blob blob-orange"></div>
+  <div class="blob blob-blue"></div>
+
+  <main class="relative z-10 w-full max-w-lg" role="main">
+    <div class="reg-card p-8 sm:p-10">
+
+      <!-- ── Logo & heading ──────────────────────────────── -->
+      <div class="flex flex-col items-center mb-8 anim-fade-up">
+        <div class="logo-ring w-16 h-16 rounded-2xl flex items-center justify-center mb-5">
+          <i data-lucide="user-plus" class="text-[#DF6B33] w-8 h-8"></i>
+        </div>
+        <h1 class="font-poppins font-bold text-3xl text-white tracking-tight mb-1">
+          Create account
+        </h1>
+        <p class="text-sm" style="color:#A0A8CC;">
+          Join us — it's free and takes less than a minute
+        </p>
+      </div>
+
+      <!-- ── Form ───────────────────────────────────────── -->
+      <form id="registerForm" novalidate class="space-y-5" onsubmit="handleSubmit(event)">
+
+        <!-- ── REQUIRED FIELDS ───────────────────────────── -->
+        <div>
+          <span class="section-label">Required information</span>
+
+          <div class="space-y-4">
+
+            <!-- Full name -->
+            <div class="anim-fade-up delay-1">
+              <label for="fullName" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Full name <span style="color:#DF6B33;">*</span>
+              </label>
+              <div class="relative">
+                <span class="input-icon"><i data-lucide="user" class="w-5 h-5"></i></span>
+                <input id="fullName" type="text" autocomplete="name" placeholder="John Doe" class="input-field"
+                  aria-required="true" />
+              </div>
+              <p id="fullNameErr" class="hidden text-xs mt-1.5" style="color:#DF6B33;"></p>
+            </div>
+
+            <!-- Email -->
+            <div class="anim-fade-up delay-1">
+              <label for="email" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Email address <span style="color:#DF6B33;">*</span>
+              </label>
+              <div class="relative">
+                <span class="input-icon"><i data-lucide="mail" class="w-5 h-5"></i></span>
+                <input id="email" type="email" autocomplete="email" placeholder="you@example.com" class="input-field"
+                  aria-required="true" />
+              </div>
+              <p id="emailErr" class="hidden text-xs mt-1.5" style="color:#DF6B33;"></p>
+            </div>
+
+            <!-- Password -->
+            <div class="anim-fade-up delay-2">
+              <label for="password" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Password <span style="color:#DF6B33;">*</span>
+              </label>
+              <div class="relative">
+                <span class="input-icon"><i data-lucide="lock" class="w-5 h-5"></i></span>
+                <input id="password" type="password" autocomplete="new-password" placeholder="Min. 8 characters"
+                  class="input-field" aria-required="true" oninput="checkStrength(this.value)" />
+                <button type="button" id="togglePw1" class="toggle-pw" aria-label="Toggle password visibility"
+                  onclick="togglePassword('password','togglePw1','eyeIcon1')">
+                  <i data-lucide="eye" class="w-5 h-5" id="eyeIcon1"></i>
+                </button>
+              </div>
+              <!-- Strength bar -->
+              <div class="mt-2 flex gap-1.5" aria-hidden="true">
+                <div class="flex-1 h-0.5 rounded-full" style="background:#1C1F36;">
+                  <div id="bar1" class="strength-bar" style="background:transparent;"></div>
+                </div>
+                <div class="flex-1 h-0.5 rounded-full" style="background:#1C1F36;">
+                  <div id="bar2" class="strength-bar" style="background:transparent;"></div>
+                </div>
+                <div class="flex-1 h-0.5 rounded-full" style="background:#1C1F36;">
+                  <div id="bar3" class="strength-bar" style="background:transparent;"></div>
+                </div>
+                <div class="flex-1 h-0.5 rounded-full" style="background:#1C1F36;">
+                  <div id="bar4" class="strength-bar" style="background:transparent;"></div>
+                </div>
+              </div>
+              <p id="strengthLabel" class="text-xs mt-1" style="color:#4A4F72;"></p>
+              <p id="passwordErr" class="hidden text-xs mt-1" style="color:#DF6B33;"></p>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="anim-fade-up delay-2">
+              <label for="confirmPassword" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Confirm password <span style="color:#DF6B33;">*</span>
+              </label>
+              <div class="relative">
+                <span class="input-icon"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+                <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter your password"
+                  class="input-field" aria-required="true" />
+                <button type="button" id="togglePw2" class="toggle-pw" aria-label="Toggle confirm password visibility"
+                  onclick="togglePassword('confirmPassword','togglePw2','eyeIcon2')">
+                  <i data-lucide="eye" class="w-5 h-5" id="eyeIcon2"></i>
+                </button>
+              </div>
+              <p id="confirmPasswordErr" class="hidden text-xs mt-1.5" style="color:#DF6B33;"></p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── OPTIONAL FIELDS ───────────────────────────── -->
+        <div>
+          <span class="section-label">Optional information</span>
+
+          <div class="space-y-4">
+
+            <!-- Gender -->
+            <div class="anim-fade-up delay-3">
+              <label for="gender" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Gender
+              </label>
+              <div class="relative">
+                <span class="input-icon"><i data-lucide="users" class="w-5 h-5"></i></span>
+                <select id="gender" class="select-field" aria-label="Select gender">
+                  <option value="">Prefer not to say</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                  <option value="other">Other</option>
+                </select>
+                <span class="select-chevron"><i data-lucide="chevron-down" class="w-4 h-4"></i></span>
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="anim-fade-up delay-4">
+              <label for="phone" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Phone number
+                <span class="text-xs font-normal ml-1" style="color:#4A4F72;">(10 digits)</span>
+              </label>
+              <div class="relative">
+                <span class="input-icon"><i data-lucide="phone" class="w-5 h-5"></i></span>
+                <input id="phone" type="tel" autocomplete="tel" placeholder="e.g. 0901234567" class="input-field" maxlength="10"
+                  inputmode="numeric" />
+              </div>
+              <p id="phoneErr" class="hidden text-xs mt-1.5" style="color:#DF6B33;"></p>
+            </div>
+
+            <!-- Address -->
+            <div class="anim-fade-up delay-4">
+              <label for="address" class="block text-sm font-medium mb-1.5" style="color:#A0A8CC;">
+                Address
+              </label>
+              <div class="relative">
+                <span class="input-icon" style="top:18px; transform:none;">
+                  <i data-lucide="map-pin" class="w-5 h-5"></i>
+                </span>
+                <textarea id="address" rows="2" placeholder="Street, city, country…" class="input-field"
+                  style="padding-top:13px; resize:none; height:auto;" aria-label="Address"></textarea>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Terms & Conditions ────────────────────────── -->
+        <div class="anim-fade-up delay-5">
+          <div class="flex items-start gap-3">
+            <input type="checkbox" id="terms" class="custom-checkbox-input" aria-required="true" />
+            <label for="terms" class="flex items-start gap-2.5 cursor-pointer select-none">
+              <span class="checkbox-box mt-0.5" id="termsBox" aria-hidden="true">
+                <i data-lucide="check" class="w-3 h-3 text-white"></i>
+              </span>
+              <span class="text-sm leading-relaxed" style="color:#A0A8CC;">
+                I agree to the
+                <a href="#" class="link-primary">Terms of Service</a>
+                and
+                <a href="#" class="link-primary">Privacy Policy</a>
+                <span style="color:#DF6B33;">*</span>
+              </span>
+            </label>
+          </div>
+          <p id="termsErr" class="hidden text-xs mt-2 ml-7" style="color:#DF6B33;"></p>
+        </div>
+
+        <!-- ── Submit ────────────────────────────────────── -->
+        <div class="anim-fade-up delay-5 pt-1">
+          <button type="submit" id="submitBtn" class="btn-primary flex items-center justify-center gap-2">
+            <i data-lucide="user-check" class="w-5 h-5" id="submitIcon"></i>
+            <span id="submitText">Create Account</span>
+          </button>
+        </div>
+
+      </form>
+
+      <!-- ── Divider ────────────────────────────────────── -->
+      <div class="flex items-center gap-3 mt-7 mb-5 anim-fade-up delay-5">
+        <div class="divider-line"></div>
+        <span class="text-xs whitespace-nowrap" style="color:#4A4F72;">or sign up with</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- ── Social buttons ─────────────────────────────── -->
+      <div class="grid grid-cols-3 gap-3 anim-fade-up delay-6">
+
+        <!-- Google -->
+        <button type="button" id="googleBtn" class="btn-social" aria-label="Sign up with Google"
+          onclick="socialSignup('Google')">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107"
+              d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+            <path fill="#FF3D00"
+              d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+            <path fill="#4CAF50"
+              d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+            <path fill="#1976D2"
+              d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+          </svg>
+          <span class="hidden sm:inline">Google</span>
+        </button>
+
+        <!-- GitHub -->
+        <button type="button" id="githubBtn" class="btn-social" aria-label="Sign up with GitHub"
+          onclick="socialSignup('GitHub')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+          </svg>
+          <span class="hidden sm:inline">GitHub</span>
+        </button>
+
+        <!-- Facebook -->
+        <button type="button" id="facebookBtn" class="btn-social" aria-label="Sign up with Facebook"
+          onclick="socialSignup('Facebook')">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#1877F2"
+              d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.885v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+          </svg>
+          <span class="hidden sm:inline">Facebook</span>
+        </button>
+
+      </div>
+
+      <!-- ── Back to login ──────────────────────────────── -->
+      <p class="text-center text-sm mt-8 anim-fade-up delay-6" style="color:#4A4F72;">
+        Already have an account?&nbsp;
+        <a href="login.html" id="loginLink" class="link-primary">
+          <span class="inline-flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+            Back to Sign In
+          </span>
+        </a>
+      </p>
+
+    </div><!-- /card -->
+  </main>
+
+  <!-- Toast -->
+  <div id="toast"
+    class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-medium z-50 opacity-0 pointer-events-none transition-all duration-300"
+    style="background:rgba(14,16,32,0.97); border:1px solid #1C1F36; box-shadow:0 8px 32px rgba(0,0,0,0.5); color:#E8EAF6;"
+    role="status" aria-live="polite"></div>
+
+  <style>
+    .btn-social {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid #1C1F36;
+      border-radius: 12px;
+      color: #A0A8CC;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: border-color .2s, background .2s, color .2s, transform .18s;
+    }
+
+    .btn-social:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: #2A2D4A;
+      color: #E8EAF6;
+      transform: translateY(-1px);
+    }
+
+    .btn-social:active {
+      transform: translateY(0);
+    }
+  </style>
+
+  <script>
+    lucide.createIcons();
+
+    /* ── Password visibility toggle ────────────────────── */
+    const pwVisible = { password: false, confirmPassword: false };
+    function togglePassword(inputId, btnId, iconId) {
+      pwVisible[inputId] = !pwVisible[inputId];
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      input.type = pwVisible[inputId] ? 'text' : 'password';
+      icon.setAttribute('data-lucide', pwVisible[inputId] ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    }
+
+    /* ── Password strength ──────────────────────────────── */
+    function checkStrength(val) {
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      const colors = ['#EF4444', '#F59E0B', '#22C55E', '#10B981'];
+      const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+      const barIds = ['bar1', 'bar2', 'bar3', 'bar4'];
+
+      barIds.forEach((id, i) => {
+        const bar = document.getElementById(id);
+        if (i < score) {
+          bar.style.width = '100%';
+          bar.style.background = colors[score - 1];
+        } else {
+          bar.style.width = '0%';
+          bar.style.background = 'transparent';
+        }
+      });
+
+      const label = document.getElementById('strengthLabel');
+      if (val.length === 0) { label.textContent = ''; return; }
+      label.textContent = labels[score - 1] || 'Weak';
+      label.style.color = colors[score - 1] || colors[0];
+    }
+
+    /* ── Validation helpers ─────────────────────────────── */
+    function setError(fieldId, msg) {
+      const err = document.getElementById(fieldId + 'Err');
+      const input = document.getElementById(fieldId);
+      if (err) { err.textContent = msg; err.classList.remove('hidden'); }
+      if (input) { input.classList.add('is-error'); }
+    }
+    function clearError(fieldId) {
+      const err = document.getElementById(fieldId + 'Err');
+      const input = document.getElementById(fieldId);
+      if (err) { err.classList.add('hidden'); }
+      if (input) { input.classList.remove('is-error'); }
+    }
+
+    /* Live clear */
+    ['fullName', 'email', 'password', 'confirmPassword', 'phone'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => clearError(id));
+    });
+
+    /* ── Terms checkbox error ───────────────────────────── */
+    function setTermsError(msg) {
+      const err = document.getElementById('termsErr');
+      const box = document.getElementById('termsBox');
+      err.textContent = msg; err.classList.remove('hidden');
+      box.classList.add('is-error');
+    }
+    function clearTermsError() {
+      document.getElementById('termsErr').classList.add('hidden');
+      document.getElementById('termsBox').classList.remove('is-error');
+    }
+    document.getElementById('terms').addEventListener('change', clearTermsError);
+
+    /* ── Toast ──────────────────────────────────────────── */
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      const colors = { success: '#22c55e', error: '#DF6B33', info: '#6366f1' };
+      const icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
+      toast.innerHTML = `
+        <i data-lucide="${icons[type]}" class="w-5 h-5" style="color:${colors[type]};flex-shrink:0;"></i>
+        <span>${msg}</span>`;
+      lucide.createIcons();
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+      toast.style.pointerEvents = 'auto';
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(12px)';
+        toast.style.pointerEvents = 'none';
+      }, 3200);
+    }
+
+    /* ── Form submit ────────────────────────────────────── */
+    async function handleSubmit(e) {
+      e.preventDefault();
+
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPw = document.getElementById('confirmPassword').value;
+      const phone = document.getElementById('phone').value.trim();
+      const termsChecked = document.getElementById('terms').checked;
+
+      let valid = true;
+
+      /* Full name */
+      clearError('fullName');
+      if (!fullName) {
+        setError('fullName', 'Full name is required.'); valid = false;
+      } else if (fullName.length < 2) {
+        setError('fullName', 'Name must be at least 2 characters.'); valid = false;
+      }
+
+      /* Email */
+      clearError('email');
+      if (!email) {
+        setError('email', 'Email address is required.'); valid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('email', 'Please enter a valid email address.'); valid = false;
+      }
+
+      /* Password */
+      clearError('password');
+      if (!password) {
+        setError('password', 'Password is required.'); valid = false;
+      } else if (password.length < 8) {
+        setError('password', 'Password must be at least 8 characters.'); valid = false;
+      }
+
+      /* Confirm password */
+      clearError('confirmPassword');
+      if (!confirmPw) {
+        setError('confirmPassword', 'Please confirm your password.'); valid = false;
+      } else if (password && confirmPw !== password) {
+        setError('confirmPassword', 'Passwords do not match.'); valid = false;
+      }
+
+      /* Phone (optional but validate format if provided) */
+      clearError('phone');
+      if (phone && !/^\d{10}$/.test(phone)) {
+        setError('phone', 'Phone number must be exactly 10 digits.'); valid = false;
+      }
+
+      /* Terms */
+      clearTermsError();
+      if (!termsChecked) {
+        setTermsError('You must agree to the Terms of Service to continue.'); valid = false;
+      }
+
+      if (!valid) return;
+
+      /* Loading state */
+      const btn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('submitText');
+      const btnIcon = document.getElementById('submitIcon');
+      btn.disabled = true;
+      btnText.textContent = 'Creating account…';
+      btnIcon.setAttribute('data-lucide', 'loader');
+      btnIcon.classList.add('spinner');
+      lucide.createIcons();
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      btn.disabled = false;
+      btnText.textContent = 'Create Account';
+      btnIcon.setAttribute('data-lucide', 'user-check');
+      btnIcon.classList.remove('spinner');
+      lucide.createIcons();
+
+      showToast('Account created successfully! Welcome aboard 🎉', 'success');
+    }
+
+    /* ── Social signup ──────────────────────────────────── */
+    function socialSignup(provider) {
+      showToast(`Redirecting to ${provider}…`, 'info');
+    }
+  </script>
+</body>
+
+</html>
